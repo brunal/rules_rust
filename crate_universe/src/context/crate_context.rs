@@ -7,11 +7,8 @@ use cargo_metadata::{Node, Package, PackageId};
 use serde::{Deserialize, Serialize};
 
 use crate::config::{AliasRule, CrateId, GenBinaries};
-use crate::metadata::{
-    CrateAnnotation, Dependency, PairedExtras, SourceAnnotation, TreeResolverMetadata,
-};
+use crate::metadata::{Annotations, CrateAnnotation, Dependency, PairedExtras, SourceAnnotation};
 use crate::select::Select;
-use crate::splicing::WorkspaceMetadata;
 use crate::utils::sanitize_module_name;
 use crate::utils::starlark::{Glob, Label};
 
@@ -372,18 +369,18 @@ pub(crate) struct CrateContext {
 }
 
 impl CrateContext {
-    #[allow(clippy::too_many_arguments)]
     pub(crate) fn new(
-        annotation: &CrateAnnotation,
-        packages: &BTreeMap<PackageId, Package>,
-        source_annotations: &BTreeMap<PackageId, SourceAnnotation>,
-        extras: &BTreeMap<CrateId, PairedExtras>,
-        workspace_metadata: &WorkspaceMetadata,
+        crate_annotation: &CrateAnnotation,
+        common_annotations: &Annotations,
         include_binaries: bool,
         include_build_scripts: bool,
         sources_are_present: bool,
     ) -> anyhow::Result<Self> {
-        let package: &Package = &packages[&annotation.node.id];
+        let packages = &common_annotations.metadata.packages;
+        let source_annotations = &common_annotations.lockfile.crates;
+        let workspace_metadata = &common_annotations.metadata.workspace_metadata;
+
+        let package: &Package = &packages[&crate_annotation.node.id];
         let current_crate_id = CrateId::new(package.name.clone(), package.version.clone());
 
         let new_crate_dep = |dep: Dependency| -> CrateDependency {
@@ -406,16 +403,25 @@ impl CrateContext {
         };
 
         // Convert the dependencies into renderable strings
-        let deps = annotation.deps.normal_deps.clone().map(new_crate_dep);
-        let deps_dev = annotation.deps.normal_dev_deps.clone().map(new_crate_dep);
-        let proc_macro_deps = annotation.deps.proc_macro_deps.clone().map(new_crate_dep);
-        let proc_macro_deps_dev = annotation
+        let deps = crate_annotation.deps.normal_deps.clone().map(new_crate_dep);
+        let deps_dev = crate_annotation
+            .deps
+            .normal_dev_deps
+            .clone()
+            .map(new_crate_dep);
+        let proc_macro_deps = crate_annotation
+            .deps
+            .proc_macro_deps
+            .clone()
+            .map(new_crate_dep);
+        let proc_macro_deps_dev = crate_annotation
             .deps
             .proc_macro_dev_deps
             .clone()
             .map(new_crate_dep);
 
-        let crate_features = workspace_metadata.resolver_data
+        let crate_features = workspace_metadata
+            .tree_metadata
             .get(&current_crate_id)
             .map(|tree_data| {
                 let mut select = Select::<BTreeSet<String>>::new();
@@ -441,7 +447,8 @@ impl CrateContext {
         };
 
         // Locate extra settings for the current package.
-        let package_extra = extras
+        let package_extra = common_annotations
+            .pairred_extras
             .iter()
             .find(|(_, settings)| settings.package_id == package.id);
 
@@ -459,7 +466,7 @@ impl CrateContext {
 
         // Iterate over each target and produce a Bazel target for all supported "kinds"
         let targets = Self::collect_targets(
-            &annotation.node,
+            &crate_annotation.node,
             packages,
             gen_binaries,
             include_build_scripts,
@@ -499,7 +506,7 @@ impl CrateContext {
                     id: current_crate_id,
                     target: target.crate_name.clone(),
                     alias: None,
-                    local_path: match source_annotations.get(&annotation.node.id) {
+                    local_path: match source_annotations.get(&crate_annotation.node.id) {
                         Some(SourceAnnotation::Path { path }) => Some(path.clone()),
                         _ => None,
                     },
@@ -507,9 +514,13 @@ impl CrateContext {
                 None,
             );
 
-            let build_deps = annotation.deps.build_deps.clone().map(new_crate_dep);
-            let build_link_deps = annotation.deps.build_link_deps.clone().map(new_crate_dep);
-            let build_proc_macro_deps = annotation
+            let build_deps = crate_annotation.deps.build_deps.clone().map(new_crate_dep);
+            let build_link_deps = crate_annotation
+                .deps
+                .build_link_deps
+                .clone()
+                .map(new_crate_dep);
+            let build_proc_macro_deps = crate_annotation
                 .deps
                 .build_proc_macro_deps
                 .clone()
@@ -566,9 +577,12 @@ impl CrateContext {
             extra_aliased_targets: BTreeMap::new(),
             alias_rule: None,
             override_targets: BTreeMap::new(),
-            workspace_manifest_target: workspace_metadata.workspace_prefix.map(|p| format!("//{}:Cargo.toml", p)),
+            workspace_manifest_target: workspace_metadata
+                .workspace_prefix
+                .as_ref()
+                .map(|p| format!("//{}:Cargo.toml", p)),
         }
-        .with_overrides(extras))
+        .with_overrides(&common_annotations.pairred_extras))
     }
 
     fn with_overrides(mut self, extras: &BTreeMap<CrateId, PairedExtras>) -> Self {
@@ -931,10 +945,7 @@ mod test {
         let are_sources_present = false;
         let context = CrateContext::new(
             crate_annotation,
-            &annotations.metadata.packages,
-            &annotations.lockfile.crates,
-            &annotations.pairred_extras,
-            &annotations.metadata.workspace_metadata,
+            &common_annotations(),
             include_binaries,
             include_build_scripts,
             are_sources_present,
@@ -954,7 +965,7 @@ mod test {
 
     #[test]
     fn context_with_overrides() {
-        let annotations = common_annotations();
+        let mut annotations = common_annotations();
 
         let package_id = PackageId {
             repr: "path+file://{TEMP_DIR}/common#0.1.0".to_owned(),
@@ -974,16 +985,14 @@ mod test {
                 },
             },
         );
+        annotations.pairred_extras = pairred_extras;
 
         let include_binaries = false;
         let include_build_scripts = false;
         let are_sources_present = false;
         let context = CrateContext::new(
             crate_annotation,
-            &annotations.metadata.packages,
-            &annotations.lockfile.crates,
-            &pairred_extras,
-            &annotations.metadata.workspace_metadata,
+            &annotations,
             include_binaries,
             include_build_scripts,
             are_sources_present,
@@ -1050,10 +1059,7 @@ mod test {
         let are_sources_present = false;
         let context = CrateContext::new(
             crate_annotation,
-            &annotations.metadata.packages,
-            &annotations.lockfile.crates,
-            &annotations.pairred_extras,
-            &annotations.metadata.workspace_metadata,
+            &annotations,
             include_binaries,
             include_build_scripts,
             are_sources_present,
@@ -1098,10 +1104,7 @@ mod test {
         let are_sources_present = false;
         let context = CrateContext::new(
             crate_annotation,
-            &annotations.metadata.packages,
-            &annotations.lockfile.crates,
-            &annotations.pairred_extras,
-            &annotations.metadata.workspace_metadata,
+            &annotations,
             include_binaries,
             include_build_scripts,
             are_sources_present,
@@ -1135,10 +1138,7 @@ mod test {
         let are_sources_present = false;
         let context = CrateContext::new(
             crate_annotation,
-            &annotations.metadata.packages,
-            &annotations.lockfile.crates,
-            &annotations.pairred_extras,
-            &annotations.metadata.workspace_metadata,
+            &annotations,
             include_binaries,
             include_build_scripts,
             are_sources_present,
@@ -1178,10 +1178,7 @@ mod test {
 
         let context = CrateContext::new(
             crate_annotation,
-            &annotations.metadata.packages,
-            &annotations.lockfile.crates,
-            &annotations.pairred_extras,
-            &annotations.metadata.workspace_metadata,
+            &annotations,
             include_binaries,
             include_build_scripts,
             are_sources_present,
@@ -1311,10 +1308,7 @@ mod test {
 
         let context = CrateContext::new(
             crate_annotation,
-            &annotations.metadata.packages,
-            &annotations.lockfile.crates,
-            &annotations.pairred_extras,
-            &annotations.metadata.workspace_metadata,
+            &annotations,
             include_binaries,
             include_build_scripts,
             are_sources_present,
@@ -1347,10 +1341,7 @@ mod test {
         let are_sources_present = false;
         let err = CrateContext::new(
             crate_annotation,
-            &annotations.metadata.packages,
-            &annotations.lockfile.crates,
-            &annotations.pairred_extras,
-            &annotations.metadata.workspace_metadata,
+            &annotations,
             include_binaries,
             include_build_scripts,
             are_sources_present,

@@ -70,10 +70,7 @@ impl Context {
             .map(|annotation| {
                 let context = CrateContext::new(
                     annotation,
-                    &annotations.metadata.packages,
-                    &annotations.lockfile.crates,
-                    &annotations.pairred_extras,
-                    &annotations.metadata.workspace_metadata.tree_metadata,
+                    &annotations,
                     annotations.config.generate_binaries,
                     annotations.config.generate_build_scripts,
                     sources_are_present,

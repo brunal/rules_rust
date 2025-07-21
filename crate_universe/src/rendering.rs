@@ -1108,6 +1108,7 @@ mod test {
                 extra_aliased_targets: BTreeMap::default(),
                 alias_rule: None,
                 override_targets: BTreeMap::default(),
+                workspace_manifest_target: None,
             },
         );
 
@@ -1146,6 +1147,7 @@ mod test {
                 extra_aliased_targets: BTreeMap::default(),
                 alias_rule: None,
                 override_targets: BTreeMap::default(),
+                workspace_manifest_target: None,
             },
         );
 
@@ -1188,6 +1190,7 @@ mod test {
                 extra_aliased_targets: BTreeMap::default(),
                 alias_rule: None,
                 override_targets: BTreeMap::default(),
+                workspace_manifest_target: None,
             },
         );
 
@@ -1262,6 +1265,7 @@ mod test {
                 extra_aliased_targets: BTreeMap::default(),
                 alias_rule: None,
                 override_targets: BTreeMap::default(),
+                workspace_manifest_target: None,
             },
         );
 
@@ -1325,6 +1329,7 @@ mod test {
                 extra_aliased_targets: BTreeMap::default(),
                 alias_rule: None,
                 override_targets: BTreeMap::default(),
+                workspace_manifest_target: None,
             },
         );
 
@@ -1363,6 +1368,7 @@ mod test {
                 extra_aliased_targets: BTreeMap::default(),
                 alias_rule: None,
                 override_targets: BTreeMap::default(),
+                workspace_manifest_target: None,
             },
         );
 
@@ -1403,6 +1409,7 @@ mod test {
                 extra_aliased_targets: BTreeMap::default(),
                 alias_rule: None,
                 override_targets: BTreeMap::default(),
+                workspace_manifest_target: None,
             },
         );
 
@@ -1464,6 +1471,7 @@ mod test {
                 extra_aliased_targets: BTreeMap::default(),
                 alias_rule: None,
                 override_targets: BTreeMap::default(),
+                workspace_manifest_target: None,
             },
         );
 
@@ -1498,6 +1506,7 @@ mod test {
                 extra_aliased_targets: BTreeMap::default(),
                 alias_rule: None,
                 override_targets: BTreeMap::default(),
+                workspace_manifest_target: None,
             },
         );
 
@@ -1538,6 +1547,7 @@ mod test {
                 extra_aliased_targets: BTreeMap::default(),
                 alias_rule: None,
                 override_targets: BTreeMap::default(),
+                workspace_manifest_target: None,
             },
         );
 
@@ -1590,6 +1600,7 @@ mod test {
                 extra_aliased_targets: BTreeMap::default(),
                 alias_rule: None,
                 override_targets: BTreeMap::default(),
+                workspace_manifest_target: None,
             },
         );
 
@@ -1712,6 +1723,7 @@ mod test {
                 extra_aliased_targets: BTreeMap::default(),
                 alias_rule: None,
                 override_targets: BTreeMap::default(),
+                workspace_manifest_target: None,
             },
         );
 
@@ -1759,6 +1771,7 @@ mod test {
                 extra_aliased_targets: BTreeMap::default(),
                 alias_rule: None,
                 override_targets: BTreeMap::default(),
+                workspace_manifest_target: None,
             },
         );
 
@@ -1814,6 +1827,7 @@ mod test {
                 license: None,
                 alias_rule: None,
                 override_targets: BTreeMap::default(),
+                workspace_manifest_target: None,
             },
         );
 
@@ -1880,6 +1894,7 @@ mod test {
                 license: None,
                 alias_rule: None,
                 override_targets: BTreeMap::default(),
+                workspace_manifest_target: None,
             },
         );
 
@@ -1953,6 +1968,7 @@ mod test {
                 extra_aliased_targets: BTreeMap::default(),
                 alias_rule: None,
                 override_targets: BTreeMap::default(),
+                workspace_manifest_target: None,
             },
         );
 
@@ -2036,6 +2052,7 @@ mod test {
                 license: None,
                 alias_rule: None,
                 override_targets: BTreeMap::default(),
+                workspace_manifest_target: None,
             },
         );
 
@@ -2130,6 +2147,7 @@ mod test {
                 license: None,
                 alias_rule: None,
                 override_targets: BTreeMap::default(),
+                workspace_manifest_target: None,
             },
         );
 
@@ -2169,6 +2187,7 @@ mod test {
                 license: None,
                 alias_rule: None,
                 override_targets: BTreeMap::default(),
+                workspace_manifest_target: None,
             },
         );
 
