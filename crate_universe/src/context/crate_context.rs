@@ -11,6 +11,7 @@ use crate::metadata::{
     CrateAnnotation, Dependency, PairedExtras, SourceAnnotation, TreeResolverMetadata,
 };
 use crate::select::Select;
+use crate::splicing::WorkspaceMetadata;
 use crate::utils::sanitize_module_name;
 use crate::utils::starlark::{Glob, Label};
 
@@ -363,6 +364,11 @@ pub(crate) struct CrateContext {
     #[serde(skip_serializing_if = "BTreeMap::is_empty")]
     #[serde(default)]
     pub(crate) override_targets: BTreeMap<String, Label>,
+
+    /// The name of the BUILD target of the Cargo.toml of the workspace.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    #[serde(default)]
+    pub(crate) workspace_manifest_target: Option<String>,
 }
 
 impl CrateContext {
@@ -372,7 +378,7 @@ impl CrateContext {
         packages: &BTreeMap<PackageId, Package>,
         source_annotations: &BTreeMap<PackageId, SourceAnnotation>,
         extras: &BTreeMap<CrateId, PairedExtras>,
-        resolver_data: &TreeResolverMetadata,
+        workspace_metadata: &WorkspaceMetadata,
         include_binaries: bool,
         include_build_scripts: bool,
         sources_are_present: bool,
@@ -409,7 +415,7 @@ impl CrateContext {
             .clone()
             .map(new_crate_dep);
 
-        let crate_features = resolver_data
+        let crate_features = workspace_metadata.resolver_data
             .get(&current_crate_id)
             .map(|tree_data| {
                 let mut select = Select::<BTreeSet<String>>::new();
@@ -560,6 +566,7 @@ impl CrateContext {
             extra_aliased_targets: BTreeMap::new(),
             alias_rule: None,
             override_targets: BTreeMap::new(),
+            workspace_manifest_target: workspace_metadata.workspace_prefix.map(|p| format!("//{}:Cargo.toml", p)),
         }
         .with_overrides(extras))
     }
@@ -927,7 +934,7 @@ mod test {
             &annotations.metadata.packages,
             &annotations.lockfile.crates,
             &annotations.pairred_extras,
-            &annotations.metadata.workspace_metadata.tree_metadata,
+            &annotations.metadata.workspace_metadata,
             include_binaries,
             include_build_scripts,
             are_sources_present,
@@ -976,7 +983,7 @@ mod test {
             &annotations.metadata.packages,
             &annotations.lockfile.crates,
             &pairred_extras,
-            &annotations.metadata.workspace_metadata.tree_metadata,
+            &annotations.metadata.workspace_metadata,
             include_binaries,
             include_build_scripts,
             are_sources_present,
@@ -1046,7 +1053,7 @@ mod test {
             &annotations.metadata.packages,
             &annotations.lockfile.crates,
             &annotations.pairred_extras,
-            &annotations.metadata.workspace_metadata.tree_metadata,
+            &annotations.metadata.workspace_metadata,
             include_binaries,
             include_build_scripts,
             are_sources_present,
@@ -1094,7 +1101,7 @@ mod test {
             &annotations.metadata.packages,
             &annotations.lockfile.crates,
             &annotations.pairred_extras,
-            &annotations.metadata.workspace_metadata.tree_metadata,
+            &annotations.metadata.workspace_metadata,
             include_binaries,
             include_build_scripts,
             are_sources_present,
@@ -1131,7 +1138,7 @@ mod test {
             &annotations.metadata.packages,
             &annotations.lockfile.crates,
             &annotations.pairred_extras,
-            &annotations.metadata.workspace_metadata.tree_metadata,
+            &annotations.metadata.workspace_metadata,
             include_binaries,
             include_build_scripts,
             are_sources_present,
@@ -1174,7 +1181,7 @@ mod test {
             &annotations.metadata.packages,
             &annotations.lockfile.crates,
             &annotations.pairred_extras,
-            &annotations.metadata.workspace_metadata.tree_metadata,
+            &annotations.metadata.workspace_metadata,
             include_binaries,
             include_build_scripts,
             are_sources_present,
@@ -1307,7 +1314,7 @@ mod test {
             &annotations.metadata.packages,
             &annotations.lockfile.crates,
             &annotations.pairred_extras,
-            &annotations.metadata.workspace_metadata.tree_metadata,
+            &annotations.metadata.workspace_metadata,
             include_binaries,
             include_build_scripts,
             are_sources_present,
@@ -1343,7 +1350,7 @@ mod test {
             &annotations.metadata.packages,
             &annotations.lockfile.crates,
             &annotations.pairred_extras,
-            &annotations.metadata.workspace_metadata.tree_metadata,
+            &annotations.metadata.workspace_metadata,
             include_binaries,
             include_build_scripts,
             are_sources_present,

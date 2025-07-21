@@ -146,6 +146,8 @@ pub(crate) struct CargoBuildScript {
 pub(crate) struct CargoTomlEnvVars {
     pub(crate) name: String,
     pub(crate) src: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub(crate) workspace: Option<String>,
 }
 
 #[derive(Serialize)]

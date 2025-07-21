@@ -467,6 +467,7 @@ impl Renderer {
             starlark.push(Starlark::CargoTomlEnvVars(CargoTomlEnvVars {
                 name: "cargo_toml_env_vars".to_owned(),
                 src: "Cargo.toml".to_owned(),
+                workspace: krate.workspace_manifest_target.clone(),
             }));
         }
 
